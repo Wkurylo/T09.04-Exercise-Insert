@@ -17,12 +17,16 @@
 package com.example.android.todolist.data;
 
 import android.content.ContentProvider;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.support.annotation.NonNull;
+import android.widget.Toast;
 
 // Verify that TaskContentProvider extends from ContentProvider and implements required methods
 public class TaskContentProvider extends ContentProvider {
@@ -57,6 +61,7 @@ public class TaskContentProvider extends ContentProvider {
         return uriMatcher;
     }
 
+    private SQLiteDatabase mDB;
     // Member variable for a TaskDbHelper that's initialized in the onCreate() method
     private TaskDbHelper mTaskDbHelper;
 
@@ -75,21 +80,39 @@ public class TaskContentProvider extends ContentProvider {
         return true;
     }
 
-
     @Override
     public Uri insert(@NonNull Uri uri, ContentValues values) {
         // TODO (1) Get access to the task database (to write new data to)
+        mDB = mTaskDbHelper.getWritableDatabase();
 
-        // TODO (2) Write URI matching code to identify the match for the tasks directory
+        // completed (2) Write URI matching code to identify the match for the tasks directory
+        int matcher = sUriMatcher.match(uri);
 
-        // TODO (3) Insert new values into the database
-        // TODO (4) Set the value for the returnedUri and write the default case for unknown URI's
+        Uri returnedUri;
 
-        // TODO (5) Notify the resolver if the uri has been changed, and return the newly inserted URI
+        switch (matcher)
+        {
+            case TASKS:
+                long rowId = mDB.insert(TaskContract.TaskEntry.TABLE_NAME,null,values);
+                if(rowId >= 0){
+                    returnedUri = ContentUris.withAppendedId(TaskContract.TaskEntry.CONTENT_URI,rowId);
+                } else {
+                    throw new android.database.SQLException("Failed to insert row into" + uri);
+                }
+                break;
+            default:
+                throw  new UnsupportedOperationException("Unknown Uri" + uri);
+        }
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        getContext().getContentResolver().notifyChange(uri,null);
+
+        return returnedUri;
+
+        // completed (3) Insert new values into the database
+        // completed (4) Set the value for the returnedUri and write the default case for unknown URI's
+
+        // completed (5) Notify the resolver if the uri has been changed, and return the newly inserted URI
     }
-
 
     @Override
     public Cursor query(@NonNull Uri uri, String[] projection, String selection,
